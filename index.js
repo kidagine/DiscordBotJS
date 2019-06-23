@@ -6,13 +6,26 @@ const botTokenText = fs.readFileSync("./botToken.txt").toString('utf-8');
 const token = botTokenText;
 
 const PREFIX = '!';
-const version = '1.1.1';
-
-var customCommandsList = [[]];
+const version = '1.2.4';
+const customCommandsFile = "./customCommands.json";
+var customCommandsList = [];
 
 //---START UP---
 bot.on('ready', () =>{
     console.log('This bot is online');
+
+    //Load custom commands from JSON
+    var customCommandsData = JSON.parse(fs.readFileSync(customCommandsFile, "utf8"));
+        for (let i = 0; i < customCommandsData.length; i++)
+        {
+            var stringCustomCommand = JSON.stringify(customCommandsData[i]);
+            var indexFirst = stringCustomCommand.indexOf(',');
+            var indexSecond = stringCustomCommand.indexOf('}');
+            var newCustomCommand = Object.create(CustomCommand);
+            newCustomCommand.init(stringCustomCommand.substring(16, indexFirst-1), stringCustomCommand.substring(indexFirst+16, indexSecond-1));
+            customCommandsList.push(newCustomCommand);
+        }
+
     var random = Math.floor(Math.random() * 4);
     switch(random)
     {
@@ -43,6 +56,27 @@ bot.on('guildMemberAdd', member =>{
     }
 });
 
+//Custom command object
+var CustomCommand =
+{
+    init: function (commandName, commandText)
+    {
+        this.commandName = commandName;
+        this.commandText = commandText;
+    },
+
+    getCommandName: function()
+    {
+        var name = this.commandName;
+        return name;
+    },
+
+    getCommandText: function()
+    {
+        var text = this.commandText;
+        return text;
+    }
+};
 
 //---COMMANDS---
 bot.on('message', message=>
@@ -55,6 +89,9 @@ bot.on('message', message=>
             //Simple Commands
             case 'dude':
                 message.channel.send("❤️");
+                break;
+            case 'link':
+                message.channel.send("https://www.youtube.com/watch?v=lDH4pRcsGw4");
                 break;
             case 'ass':
                 const corgiButt00 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/592025801239560193/image0.png")
@@ -195,33 +232,61 @@ bot.on('message', message=>
                     {
                         if (args[3])
                         {
-                            customCommandsList.push(args[2], args[3])
-                            message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + customCommandsList[customCommandsList.length - 2] + "\"" + " has been added successfully.");
+                            var newCustomCommand = Object.create(CustomCommand);
+                            newCustomCommand.init(args[2], args.slice(3).join(" "));
+                            customCommandsList.push(newCustomCommand);
+                            message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + newCustomCommand.getCommandName() + "\"" + " has been added successfully.");
+
+                            fs.writeFile (customCommandsFile, JSON.stringify(customCommandsList), err =>{
+                                if (err) throw err;
+                                message.channel.send("custom command saved");
+                            });
                         }
                     }
-                  }
+                }
+                else if (args[1] === 'remove')
+                {
+                    if (args[2].startsWith("!"))
+                    {
+                        var newCustomCommand = Object.create(CustomCommand);
+                        newCustomCommand.init(args[2], "");
+                        customCommandsList.pop(newCustomCommand);
+                        message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + newCustomCommand.getCommandName() + "\"" + " has been removed successfully.");
+
+                        delete customCommandsFile[args[2]];
+                    }
+                }
+                else if (args[1] === 'edit')
+                {
+                    if (args[2].startsWith("!"))
+                    {
+                        
+                        message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + newCustomCommand.getCommandName() + "\"" + " has been edited successfully.");
+                    }
+                }
+                else if (args[1] === 'clear')
+                {
+                    customCommandsList = [];
+                    fs.writeFile (customCommandsFile, '[]', err =>{
+                        if (err) throw err;
+                    }); 
+                    message.channel.send("<@" + message.author.id + ">" + " -> The command list" + " has been cleared successfully.");
+                }
                 break;  
             default:
                 if (message.content.indexOf(PREFIX) === 0)
                 {
-                    for (let i = 0; i < customCommandsList.length; i++)
+                    customCommandsList.forEach(function (customCommand)
                     {
-                        if ("!" + args[0] === customCommandsList[i].)
+                        if ("!" + args[0] === customCommand.getCommandName())
                         {
-                            message.channel.send("Found it papa: " + customCommandsList[i]);
-                            return;
+                            message.channel.send(customCommand.getCommandText());
                         }
-                        else
-                        {
-                            message.channel.send(args[0]);
-                            message.channel.send(customCommandsList[i]);
-                        }
-                    }
+                    })
                 }
                 break;
         }
     }
 })
-
 
 bot.login(token);
