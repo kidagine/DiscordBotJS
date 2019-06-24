@@ -88,27 +88,7 @@ bot.on('message', message=>
     {
         switch (args[0])
         {
-            //Simple Commands
-            case 'dude':
-                message.channel.send("❤️");
-                break;
-            case 'link':
-                message.channel.send("https://www.youtube.com/watch?v=lDH4pRcsGw4");
-                break;
-            case 'ass':
-                const corgiButt00 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/592025801239560193/image0.png")
-                message.channel.send(corgiButt00);
-                break;
-            case "hali":  
-                message.channel.send("SUPER BESTEST HALI EVER❤️❤️❤️");
-                break; 
-            //Date Commands
-            case "date":
-                var today = new Date();
-                var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
-                message.channel.sendMessage(date)
-                break;
-            //intermediate Commands
+            //Info command
             case 'info':
                 if (args[1] === 'version')
                 {
@@ -119,6 +99,13 @@ bot.on('message', message=>
                     message.channel.sendMessage('Be more specific scrub.')
                 }
                 break;
+            //Date Commands
+            case "date":
+                var today = new Date();
+                var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+                message.channel.sendMessage(date)
+                break;
+
             //Embed Commands
             case 'embed':
                 const embed = new Discord.RichEmbed()
@@ -130,24 +117,6 @@ bot.on('message', message=>
                 break;
 
             //Random Commands
-            case 'random':
-                var random = Math.floor(Math.random() * 3)
-                switch (random)
-                {
-                    case 0:
-                        message.channel.sendMessage('0')
-                        break;
-                    case 1:
-                        message.channel.sendMessage('1')
-                        break;
-                    case 2:
-                        message.channel.sendMessage('2')
-                        break;
-                    case 3:
-                        message.channel.sendMessage('3')
-                        break;
-                }
-                break;
             case 'fight':
                 var random = Math.floor(Math.random() * 5)
                 switch (random)
@@ -226,7 +195,7 @@ bot.on('message', message=>
                         break;
                 }
                 break;
-            //Custom commands
+            //-Custom Commands
             case "command":
                 if (args[1] === 'add')
                 {
