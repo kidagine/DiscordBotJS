@@ -7,15 +7,16 @@ const token = botTokenText;
 
 const PREFIX = '!';
 const version = '1.2.4';
+
 const customCommandsFile = "./customCommands.json";
 var customCommandsList = [];
+var customCommandsData = JSON.parse(fs.readFileSync(customCommandsFile, "utf8"));
 
 //---START UP---
 bot.on('ready', () =>{
     console.log('This bot is online');
 
     //Load custom commands from JSON
-    var customCommandsData = JSON.parse(fs.readFileSync(customCommandsFile, "utf8"));
         for (let i = 0; i < customCommandsData.length; i++)
         {
             var stringCustomCommand = JSON.stringify(customCommandsData[i]);
@@ -82,6 +83,7 @@ var CustomCommand =
 bot.on('message', message=>
 {
     let args = message.content.toLocaleLowerCase().substring(PREFIX.length).split(" ");
+    let argsNormalCase = message.content.substring(PREFIX.length).split(" ");
     if (message.member.roles.find(r => r.name === "Scrubzz"))
     {
         switch (args[0])
@@ -232,15 +234,29 @@ bot.on('message', message=>
                     {
                         if (args[3])
                         {
+                            var doesCommandExist = false;
                             var newCustomCommand = Object.create(CustomCommand);
-                            newCustomCommand.init(args[2], args.slice(3).join(" "));
-                            customCommandsList.push(newCustomCommand);
-                            message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + newCustomCommand.getCommandName() + "\"" + " has been added successfully.");
+                            newCustomCommand.init(args[2], argsNormalCase.slice(3).join(" "));
+                            
+                            customCommandsList.forEach(function (customCommand)
+                            {
+                                if (args[2] === customCommand.getCommandName())
+                                {
+                                    message.channel.send("This command already exists scrub");
+                                    doesCommandExist = true;
+                                    return;
+                                }
+                            })
+                            if (doesCommandExist === false)
+                            {
+                                customCommandsList.push(newCustomCommand);
+                                message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + newCustomCommand.getCommandName() + "\"" + " has been added successfully.");
 
-                            fs.writeFile (customCommandsFile, JSON.stringify(customCommandsList), err =>{
-                                if (err) throw err;
-                                message.channel.send("custom command saved");
-                            });
+                                fs.writeFile (customCommandsFile, JSON.stringify(customCommandsList, null, 2), err =>{
+                                    if (err) throw err;
+                                });
+                                return;
+                            }
                         }
                     }
                 }
@@ -248,20 +264,69 @@ bot.on('message', message=>
                 {
                     if (args[2].startsWith("!"))
                     {
-                        var newCustomCommand = Object.create(CustomCommand);
-                        newCustomCommand.init(args[2], "");
-                        customCommandsList.pop(newCustomCommand);
-                        message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + newCustomCommand.getCommandName() + "\"" + " has been removed successfully.");
+                        var doesCommandExist = false;
+                        for (i = 0; i < customCommandsList.length; i++)
+                        {
+                            if (args[2] === customCommandsList[i].getCommandName())
+                            {
+                                if (i === 0)
+                                {
+                                    customCommandsList.splice(i,i+1);
+                                }
+                                else if (i !== 0)
+                                {
+                                    customCommandsList.splice(i,i);
+                                }
+                                doesCommandExist = true;
+                            }
+                        }
+                        if (doesCommandExist === true)
+                        {
+                            message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + args[2] + "\"" + " has been removed successfully.");
 
-                        delete customCommandsFile[args[2]];
+                            fs.writeFile (customCommandsFile, JSON.stringify(customCommandsList, null, 2), err =>{
+                                if (err) throw err;
+                            });
+                            return;
+                        }
                     }
                 }
                 else if (args[1] === 'edit')
                 {
                     if (args[2].startsWith("!"))
                     {
-                        
-                        message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + newCustomCommand.getCommandName() + "\"" + " has been edited successfully.");
+                        if (args[3])
+                        {
+                            var doesCommandExist = false;
+                            var newCustomCommand = Object.create(CustomCommand);
+                            newCustomCommand.init(args[2], args.slice(3).join(" "));
+                            for (i = 0; i < customCommandsList.length; i++)
+                            {
+                                if (args[2] === customCommandsList[i].getCommandName())
+                                {
+                                    if (i === 0)
+                                    {
+                                        customCommandsList.splice(i,i+1);
+                                        customCommandsList.push(newCustomCommand);
+                                    }
+                                    else if (i !== 0)
+                                    {
+                                        customCommandsList.splice(i,i);
+                                        customCommandsList.push(newCustomCommand);
+                                    }
+                                    doesCommandExist = true;
+                                }
+                            }
+                            if (doesCommandExist === true)
+                            {
+                                message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + args[2] + "\"" + " has been edited successfully.");
+
+                                fs.writeFile (customCommandsFile, JSON.stringify(customCommandsList, null, 2), err =>{
+                                    if (err) throw err;
+                                });
+                                return;
+                            }
+                        }
                     }
                 }
                 else if (args[1] === 'clear')
