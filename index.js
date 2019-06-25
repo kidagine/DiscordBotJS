@@ -2,8 +2,6 @@ const {Client, Attachment} = require('discord.js');
 const bot = new Client();
 
 const fs = require("fs");
-const botTokenText = fs.readFileSync("./botToken.txt").toString('utf-8');
-const token = botTokenText;
 
 const PREFIX = '!';
 const version = '1.2.4';
