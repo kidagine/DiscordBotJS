@@ -2,6 +2,8 @@ const {Client, Attachment} = require('discord.js');
 const bot = new Client();
 
 const fs = require("fs");
+const botTokenText = fs.readFileSync("./botToken.txt").toString('utf-8');
+const token = botTokenText;
 
 const PREFIX = '!';
 const version = '1.2.4';
@@ -304,6 +306,26 @@ bot.on('message', message=>
                     }); 
                     message.channel.send("<@" + message.author.id + ">" + " -> The command list" + " has been cleared successfully.");
                 }
+                else if (args[1] === 'list')
+                var listToShow = "";
+                for (i = 0; i < customCommandsList.length; i++)
+                {
+                        if (customCommandsList[i] === customCommandsList[0])
+                        {
+                            listToShow = "```" + "Command: " + customCommandsList[i].getCommandName() + ", " + customCommandsList[i].getCommandText();
+                        }
+                        else if (customCommandsList[i] === customCommandsList[customCommandsList.length - 1])
+                        {
+                            listToShow = listToShow.concat("\n" + "Command: " + customCommandsList[i].getCommandName() + ", " +customCommandsList[i].getCommandText() + "```");
+                            message.channel.send(listToShow);
+                            isListDone = true;
+                            return;
+                        }
+                        else
+                        {
+                            listToShow = listToShow.concat("\n" + "Command: " + customCommandsList[i].getCommandName() + ", " +customCommandsList[i].getCommandText());
+                        }
+                }
                 break;  
             default:
                 if (message.content.indexOf(PREFIX) === 0)
@@ -321,4 +343,4 @@ bot.on('message', message=>
     }
 })
 
-bot.login(process.env.BOT_TOKEN);
+bot.login(token);
