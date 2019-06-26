@@ -2,6 +2,8 @@ const {Client, Attachment} = require('discord.js');
 const bot = new Client();
 
 const fs = require("fs");
+const botTokenText = fs.readFileSync("./botToken.txt").toString('utf-8');
+const token = botTokenText;
 
 const PREFIX = '!';
 const version = '1.2.4';
@@ -96,6 +98,10 @@ bot.on('message', message=>
                 {
                     message.channel.sendMessage('Be more specific scrub.')
                 }
+                break;
+            case 'join':
+                let channel = bot.channels.get('291649701382586369');
+                channel.join();
                 break;
             //Date Commands
             case "date":
@@ -341,4 +347,4 @@ bot.on('message', message=>
     }
 })
 
-bot.login(process.env.BOT_TOKEN);
+bot.login(token);
