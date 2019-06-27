@@ -6,11 +6,16 @@ const botTokenText = fs.readFileSync("./botToken.txt").toString('utf-8');
 const token = botTokenText;
 
 const PREFIX = '!';
-const version = '1.2.4';
+const version = '1.3.5';
 
 const customCommandsFile = "./customCommands.json";
 var customCommandsList = [];
 var customCommandsData = JSON.parse(fs.readFileSync(customCommandsFile, "utf8"));
+
+global.servers = {};
+const YTDL = require('ytdl-core');  
+var musicConnection;
+var musicList = [];
 
 //---START UP---
 bot.on('ready', () =>{
@@ -79,6 +84,28 @@ var CustomCommand =
     }
 };
 
+//Music command play
+function Play(musicConnection, message)
+{
+    var server = servers[message.guild.id];
+    musicList.push(server.queue[0]);
+    server.dipatcher = musicConnection.playStream(YTDL(server.queue[0], {filter: "audioonly"}));
+    server.dipatcher.on("end", function(){
+        if (server.queue[0])
+        {
+            YTDL.getInfo(musicList[0], function(err, info){
+                message.channel.send("Started playing: " + info.title);
+            });
+            server.queue.shift();
+            Play(musicConnection, message);
+        }
+        else
+        {
+            musicConnection.disconnect();    
+        }
+    });
+}
+
 //---COMMANDS---
 bot.on('message', message=>
 {
@@ -88,6 +115,31 @@ bot.on('message', message=>
     {
         switch (args[0])
         {
+            //Misc commands
+            case 'avatar':
+                message.reply(message.author.avatarURL);
+                break;
+            case 'delete':
+                if (args[1])
+                {
+                    if (args[1].match(/^-{0,1}\d+$/))
+                    {
+                        if (parseInt(args[1]) <= 100)
+                        {
+                            message.channel.bulkDelete(parseInt(args[1]));
+                            message.channel.send(`Deleted messages:  **${args[1]}** `)
+                        }
+                        else
+                        {
+                            message.channel.send('The numbeer of messages to delete has to be less than 100');
+                        }
+                    }
+                    else
+                    {
+                        message.channel.send("You have to provide a rounded number");
+                    }
+                }
+                break;
             //Info command
             case 'info':
                 if (args[1] === 'version')
@@ -99,27 +151,131 @@ bot.on('message', message=>
                     message.channel.sendMessage('Be more specific scrub.')
                 }
                 break;
-            case 'join':
-                let channel = bot.channels.get('291649701382586369');
-                channel.join();
-                break;
             //Date Commands
             case "date":
-                var today = new Date();
-                var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
-                message.channel.sendMessage(date)
-                break;
-
+                    var today = new Date();
+                    var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+                    message.channel.sendMessage(date)
+                    break;
             //Embed Commands
-            case 'embed':
-                const embed = new Discord.RichEmbed()
-                .addField('Scrub role', 'Captain')
-                .addField('Scrub name', message.author.username)
-                .setColor(0xE4007C)
-                .setThumbnail(message.author.avatarURL)
-                message.channel.sendEmbed(embed);
+                case 'embed':
+                    const embed = new Discord.RichEmbed()
+                    .addField('Scrub role', 'Captain')
+                    .addField('Scrub name', message.author.username)
+                    .setColor(0xE4007C)
+                    .setThumbnail(message.author.avatarURL)
+                    message.channel.sendEmbed(embed);
+                    break;
+            //Music commands
+            case 'music':
+                if (args[1] === "join")
+                {
+                    if (message.member.voiceChannel)
+                    {
+                        if (!message.guild.voiceConnection)
+                        {
+                            if (!servers[message.guild.id])
+                            {
+                                servers[message.guild.id] = {queue: []}
+                            }
+                            message.member.voiceChannel.join()
+                                .then(connection => {
+                                    musicConnection = connection;
+                                    message.reply("Joined the voice chat");
+                                })
+                        }
+                    }
+                    else
+                    {
+                        message.reply("You have to be in a voice channel.");
+                    }
+                }
+                else if (args[1] === 'leave')
+                {
+                    if (message.guild.voiceConnection)
+                    {
+                        message.guild.voiceConnection.disconnect();
+                    }
+                    else
+                    {
+                        message.reply("I have to be in a voice channel");
+                    }
+                }
+                else if (args[1] === 'play')
+                {
+                    if (args[2])
+                    {
+                        if (message.guild.voiceConnection)
+                        {
+                            message.channel.send("The song was added to the music list");
+                            var server = servers[message.guild.id];
+                            server.queue.push(argsNormalCase[2]);
+                            Play(musicConnection, message);
+                        }
+                        else
+                        {
+                            message.reply("I have to be in a voice channel");
+                        }
+                    }
+                    else
+                    {
+                        message.reply("You need to include a URL.");
+                    }
+                }   
+                else if (args[1] === 'current')
+                {
+                    YTDL.getInfo(musicList[0], function(err, info){
+                        message.channel.send(`Now playing: **${info.title}** `);
+                    });   
+                }
+                else if (args[1] === 'list')
+                {
+                    var listToShow = "";
+                    if (message.guild.voiceConnection)
+                    {
+                        var server = servers[message.guild.id];
+                        if (musicList.length === 1)
+                        {
+                            YTDL.getInfo(musicList[0], function(err, info){
+                                message.channel.send("```1: " + info.title + "```");
+                            });   
+                        }
+                        else
+                        {
+                            for(i = 0; i < musicList.length; i++)
+                            {
+                                if (musicList[i] === musicList[0])
+                                {
+                                    YTDL.getInfo(musicList[0], function(err, info){
+                                        listToShow = message.channel.send("```" + info.title);
+                                    });
+                                }
+                                else if (musicList[i] === musicList[musicList.length - 1])
+                                {
+                                    YTDL.getInfo(musicList[0], function(err, info){
+                                        listToShow = listToShow.concat(message.channel.send(info.title + "```"));
+                                        message.channel.send(listToShow);
+                                    });
+                                }
+                                else
+                                {
+                                    YTDL.getInfo(musicList[0], function(err, info){
+                                        listToShow = listToShow.concat(message.channel.send(info.title));
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        message.reply("I have to be in a voice channel");
+                    }
+                }
+                else if (args[1] === 'search')
+                {
+                    
+                }
                 break;
-
             //Random Commands
             case 'fight':
                 var random = Math.floor(Math.random() * 5)
@@ -312,23 +468,30 @@ bot.on('message', message=>
                 }
                 else if (args[1] === 'list')
                 var listToShow = "";
-                for (i = 0; i < customCommandsList.length; i++)
+                if (customCommandsList.length === 1)
                 {
-                        if (customCommandsList[i] === customCommandsList[0])
-                        {
-                            listToShow = "```" + "Command: " + customCommandsList[i].getCommandName() + ", " + customCommandsList[i].getCommandText();
-                        }
-                        else if (customCommandsList[i] === customCommandsList[customCommandsList.length - 1])
-                        {
-                            listToShow = listToShow.concat("\n" + "Command: " + customCommandsList[i].getCommandName() + ", " +customCommandsList[i].getCommandText() + "```");
-                            message.channel.send(listToShow);
-                            isListDone = true;
-                            return;
-                        }
-                        else
-                        {
-                            listToShow = listToShow.concat("\n" + "Command: " + customCommandsList[i].getCommandName() + ", " +customCommandsList[i].getCommandText());
-                        }
+                    listToShow = listToShow.concat("```" + "Command: " + customCommandsList[i].getCommandName() + ", " +customCommandsList[i].getCommandText() + "```");
+                    message.channel.send(listToShow);
+                }
+                else
+                {
+                    for (i = 0; i < customCommandsList.length; i++)
+                    {
+                            if (customCommandsList[i] === customCommandsList[0])
+                            {
+                                listToShow = "```" + "Command: " + customCommandsList[i].getCommandName() + ", " + customCommandsList[i].getCommandText();
+                            }
+                            else if (customCommandsList[i] === customCommandsList[customCommandsList.length - 1])
+                            {
+                                listToShow = listToShow.concat("\n" + "Command: " + customCommandsList[i].getCommandName() + ", " +customCommandsList[i].getCommandText() + "```");
+                                message.channel.send(listToShow);
+                                return;
+                            }
+                            else
+                            {
+                                listToShow = listToShow.concat("\n" + "Command: " + customCommandsList[i].getCommandName() + ", " +customCommandsList[i].getCommandText());
+                            }
+                    }
                 }
                 break;  
             default:
