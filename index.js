@@ -6,14 +6,16 @@ const botTokenText = fs.readFileSync("./botToken.txt").toString('utf-8');
 const token = botTokenText;
 
 const PREFIX = '!';
-const version = '1.3.5';
+const version = '1.3.9';
 
 const customCommandsFile = "./customCommands.json";
 var customCommandsList = [];
 var customCommandsData = JSON.parse(fs.readFileSync(customCommandsFile, "utf8"));
 
 global.servers = {};
+var server;
 const YTDL = require('ytdl-core');  
+const musicQueue = [];;
 var musicConnection;
 var musicList = [];
 
@@ -62,6 +64,9 @@ bot.on('guildMemberAdd', member =>{
     }
 });
 
+bot.on('disconnect', () => console.log('This bot is offline'));
+bot.on('reconnecting', () => message.channel.send("Reconnecting..."));
+
 //Custom command object
 var CustomCommand =
 {
@@ -87,9 +92,10 @@ var CustomCommand =
 //Music command play
 function Play(musicConnection, message)
 {
-    var server = servers[message.guild.id];
+    server = servers[message.guild.id];
     musicList.push(server.queue[0]);
     server.dipatcher = musicConnection.playStream(YTDL(server.queue[0], {filter: "audioonly"}));
+    isSongPlaying = true;
     server.dipatcher.on("end", function(){
         if (server.queue[0])
         {
@@ -97,6 +103,7 @@ function Play(musicConnection, message)
                 message.channel.send("Started playing: " + info.title);
             });
             server.queue.shift();
+            isSongPlaying = false;
             Play(musicConnection, message);
         }
         else
@@ -106,11 +113,18 @@ function Play(musicConnection, message)
     });
 }
 
+function Next(musicConnection, message)
+{
+    server.queue.shift();
+    Play(musicConnection, message);
+}
+
 //---COMMANDS---
 bot.on('message', message=>
 {
     let args = message.content.toLocaleLowerCase().substring(PREFIX.length).split(" ");
     let argsNormalCase = message.content.substring(PREFIX.length).split(" ");
+
     if (message.member.roles.find(r => r.name === "Scrubzz"))
     {
         switch (args[0])
@@ -206,11 +220,23 @@ bot.on('message', message=>
                     if (args[2])
                     {
                         if (message.guild.voiceConnection)
-                        {
-                            message.channel.send("The song was added to the music list");
-                            var server = servers[message.guild.id];
-                            server.queue.push(argsNormalCase[2]);
-                            Play(musicConnection, message);
+                        {                            
+                            musicQueue.push[argsNormalCase[2]];
+                            if (musicQueue.length === 0)
+                            {
+                            const dipatcher = musicConnection.playStream(YTDL(argsNormalCase[2]))
+                            .on ("end", () => {
+                                console.log("Finished");
+                            })
+                                .on ("error", () => {
+                                console.error("Could not join the voice channel");
+                            });
+                            }
+                            YTDL.getInfo(argsNormalCase[2], function(err, info){
+                            var songName = info.title;
+                            message.channel.send(`Started playing: **${info.title}** `)
+                            musicList.push(songName);
+                            });
                         }
                         else
                         {
@@ -222,6 +248,23 @@ bot.on('message', message=>
                         message.reply("You need to include a URL.");
                     }
                 }   
+                else if (args[1] === 'next')
+                {
+                    if (message.guild.voiceConnection)
+                    {
+                        Next(musicConnection, message);
+                    }
+                    else
+                    {
+                        message.reply("I have to be in a voice channel");
+                    }
+                }
+                else if (args[1] === 'search')
+                {
+                    YTDL.getInfo(args[2]).then(info => {
+                        message.channel.send(info.items[0].url)
+                    });
+                }
                 else if (args[1] === 'current')
                 {
                     YTDL.getInfo(musicList[0], function(err, info){
@@ -233,12 +276,9 @@ bot.on('message', message=>
                     var listToShow = "";
                     if (message.guild.voiceConnection)
                     {
-                        var server = servers[message.guild.id];
                         if (musicList.length === 1)
                         {
-                            YTDL.getInfo(musicList[0], function(err, info){
-                                message.channel.send("```1: " + info.title + "```");
-                            });   
+                            message.channel.send("```1: " + musicList[0] + "```");
                         }
                         else
                         {
@@ -246,22 +286,19 @@ bot.on('message', message=>
                             {
                                 if (musicList[i] === musicList[0])
                                 {
-                                    YTDL.getInfo(musicList[0], function(err, info){
-                                        listToShow = message.channel.send("```" + info.title);
-                                    });
+                                    var songNumber = i + 1;
+                                    listToShow = "```" + songNumber + ": " + musicList[i];
                                 }
                                 else if (musicList[i] === musicList[musicList.length - 1])
                                 {
-                                    YTDL.getInfo(musicList[0], function(err, info){
-                                        listToShow = listToShow.concat(message.channel.send(info.title + "```"));
-                                        message.channel.send(listToShow);
-                                    });
+                                    var songNumber = i + 1;
+                                    listToShow = listToShow.concat("\n" + songNumber + ": " + musicList[i] + "```");
+                                    message.channel.send(listToShow);
                                 }
                                 else
                                 {
-                                    YTDL.getInfo(musicList[0], function(err, info){
-                                        listToShow = listToShow.concat(message.channel.send(info.title));
-                                    });
+                                    var songNumber = i + 1;
+                                    listToShow = listToShow.concat("\n" + songNumber + ": " + musicList[i]);
                                 }
                             }
                         }
@@ -509,5 +546,6 @@ bot.on('message', message=>
         }
     }
 })
+
 
 bot.login(token);
