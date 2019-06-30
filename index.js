@@ -12,14 +12,13 @@ const customCommandsFile = "./customCommands.json";
 var customCommandsList = [];
 var customCommandsData = JSON.parse(fs.readFileSync(customCommandsFile, "utf8"));
 
-global.servers = {};
-var server;
 var musicConnection;
 const YTDL = require('ytdl-core');  
 const ytSearch = require('yt-search');
-var musicQueue = [];;
+var musicQueue = [];
 var musicList = [];
 var currentSong;
+var isSongSkipped = false;
 
 //---START UP---
 bot.on('ready', () =>{
@@ -35,7 +34,19 @@ bot.on('ready', () =>{
             newCustomCommand.init(stringCustomCommand.substring(16, indexFirst-1), stringCustomCommand.substring(indexFirst+16, indexSecond-1));
             customCommandsList.push(newCustomCommand);
         }
+    //Date checker
+    setInterval(() => {
+        var date = new Date();
+        var today = date.getFullYear() + '-' + (date.getMonth()) + '-' + (date.getDate());
+        var tomorrow = date.getFullYear() +'-'+(date.getMonth())+'-' + 1;
+            if (today === tomorrow)
+            {
+                var channel = bot.channels.get('475644212273086484');
+                channel.sendMessage("ITS A NEW DAY");
+            }
+    }, 86400);
 
+    //Random status chooser
     var random = Math.floor(Math.random() * 4);
     switch(random)
     {
@@ -67,7 +78,7 @@ bot.on('guildMemberAdd', member =>{
 });
 
 bot.on('disconnect', () => console.log('This bot is offline'));
-bot.on('reconnecting', () => message.channel.send("Reconnecting..."));
+bot.on('reconnecting', () => console.log("Reconnecting..."));
 
 //Custom command object
 var CustomCommand =
@@ -91,36 +102,6 @@ var CustomCommand =
     }
 };
 
-//Music command play
-function Play(musicConnection, message)
-{
-    server = servers[message.guild.id];
-    musicList.push(server.queue[0]);
-    server.dipatcher = musicConnection.playStream(YTDL(server.queue[0], {filter: "audioonly"}));
-    isSongPlaying = true;
-    server.dipatcher.on("end", function(){
-        if (server.queue[0])
-        {
-            YTDL.getInfo(musicList[0], function(err, info){
-                message.channel.send("Started playing: " + info.title);
-            });
-            server.queue.shift();
-            isSongPlaying = false;
-            Play(musicConnection, message);
-        }
-        else
-        {
-            musicConnection.disconnect();    
-        }
-    });
-}
-
-function Next(musicConnection, message)
-{
-    server.queue.shift();
-    Play(musicConnection, message);
-}
-
 //---COMMANDS---
 bot.on('message', message=>
 {
@@ -132,6 +113,9 @@ bot.on('message', message=>
         switch (args[0])
         {
             //Misc commands
+            case 'show':
+                message.channel.send("https://docs.google.com/document/d/1MAeKGCXwLhhwrFZF5wZthICURcyaZtBB96HDvRAqwZk/edit?usp=sharing");
+                break;
             case 'avatar':
                 message.reply(message.author.avatarURL);
                 break;
@@ -242,13 +226,26 @@ bot.on('message', message=>
                                             });
                                             const dipatcher = musicConnection.playStream(YTDL(argsNormalCase[2]))
                                         .on ("end", () => {
-                                            YTDL.getInfo(musicQueue[currentSong + 1], function(err, info){
-                                                var songName = info.title;
-                                                message.channel.send(`Now playing: **${songName}** `);
-                                            });
-                                            const dipatcher = musicConnection.playStream(YTDL(musicQueue[currentSong + 1]));
-                                            musicQueue.splice([currentSong], 1);
-                                            musicList.splice([currentSong], 1);                                            })
+                                            if (musicQueue.length !== 1)
+                                            {
+                                                if (!isSongSkipped)
+                                                {
+                                                    YTDL.getInfo(musicQueue[currentSong + 1], function(err, info){
+                                                    var songName = info.title;
+                                                    message.channel.send(`Now playing: **${songName}** `);
+                                                    });
+                                                    const dipatcher = musicConnection.playStream(YTDL(musicQueue[currentSong + 1]));
+                                                    musicQueue.splice([currentSong], 1);
+                                                    musicList.splice([currentSong], 1);  
+                                                }                                         
+                                            }
+                                            else
+                                            {
+                                                message.channel.send('The song queue has finished.');
+                                                musicQueue.splice([currentSong], 1);
+                                                musicList.splice([currentSong], 1);   
+                                            }
+                                            })
                                         .on ("error", () => {
                                             console.error("Could not join the voice channel");
                                             });
@@ -259,7 +256,7 @@ bot.on('message', message=>
                                         YTDL.getInfo(argsNormalCase[2], function(err, info){
                                             var songName = info.title;
                                             message.channel.send(`Added to list: **${songName}** `);
-                                            });
+                                        });
                                     }
                                 }
                                 YTDL.getInfo(argsNormalCase[2], function(err, info){
@@ -290,18 +287,33 @@ bot.on('message', message=>
                 {
                     
                 }
-                else if (args[1] === 'next')
+                else if (args[1] === 'skip')
                 {
                     if (message.guild.voiceConnection)
                     {
-                        YTDL.getInfo(musicQueue[currentSong + 1], function(err, info){
-                            var songName = info.title;
-                            message.channel.send('Skipped current song');
-                            message.channel.send(`Started playing: **${songName}** `);
-                        });
-                        const dipatcher = musicConnection.playStream(YTDL(musicQueue[currentSong + 1]));
-                        musicQueue.splice([currentSong], 1);
-                        musicList.splice([currentSong], 1);
+                        console.log(musicQueue.length);
+                        if (musicQueue.length !== 1)
+                        {
+                            isSongSkipped = true;
+                            YTDL.getInfo(musicQueue[currentSong + 1], function(err, info){
+                                var songName = info.title;
+                                message.channel.send('Skipped current song');
+                                message.channel.send(`Started playing: **${songName}** `);
+                            });
+                            const dipatcher = musicConnection.playStream(YTDL(musicQueue[currentSong + 1]))
+                            .on ("start", () => {
+                                isSongSkipped = false;
+                            });
+                            musicQueue.splice([currentSong], 1);
+                            musicList.splice([currentSong], 1);
+                        }
+                        else
+                        {
+                            console.log("start");
+                            musicQueue = [];
+                            musicList = [];
+                            message.channel.send('The song queue has finished.');
+                        }
                     }
                     else
                     {
@@ -314,7 +326,8 @@ bot.on('message', message=>
                     {
                         if (message.guild.voiceConnection)
                         {
-                            ytSearch(argsNormalCase[2], function(err, res) {
+                            ytSearch(argsNormalCase.slice(2).join(' '), function(err, res) 
+                            {
                                 if (err) return message.channel.send("Some problem occured while searching");
                                 let videos = res.videos.slice(0, 10);
 
@@ -345,18 +358,55 @@ bot.on('message', message=>
                                 collector.videos = videos;
                                 collector.once('collect', function(m) 
                                 {
-                                    currentSong = parseInt(m.content) - 1;
-                                    console.log(currentSong);
-                                    message.channel.send(`Started playing: **${videos[currentSong].title}** `)
-                                    const dipatcher = musicConnection.playStream(YTDL(this.videos[parseInt(m.content) - 1].url))
-                                    .on ("end", () => {
-                                        const dipatcher = musicConnection.playStream(YTDL(musicQueue[currentSong + 1]));
-                                        musicQueue.splice([currentSong], 1);
-                                        musicList.splice([currentSong], 1);                                           
-                                        })
-                                    .on ("error", () => {
-                                        console.error("Could not join the voice channel");
-                                        });                                
+                                    var songUrl = this.videos[parseInt(m.content) - 1].url;
+                                    if (!musicQueue.includes(songUrl))
+                                    {
+                                        musicQueue.push(songUrl);
+                                        var isSongAdded = false;
+                                        if (musicQueue.length === 1)
+                                        {
+                                            currentSong = parseInt(m.content) - 1;
+                                            message.channel.send(`Started playing: **${videos[currentSong].title}** `)
+                                            const dipatcher = musicConnection.playStream(YTDL(songUrl))
+                                            .on ("end", () => {
+                                                if (musicQueue.length !== 1)
+                                                {
+                                                    YTDL.getInfo(musicQueue[currentSong + 1], function(err, info){
+                                                        var songName = info.title;
+                                                        message.channel.send(`Now playing: **${songName}** `);
+                                                    });
+                                                    const dipatcher = musicConnection.playStream(YTDL(musicQueue[currentSong + 1]));
+                                                    musicQueue.splice([currentSong], 1);
+                                                    musicList.splice([currentSong], 1);   
+                                                }          
+                                                else
+                                                {
+                                                    message.channel.send('The song queue has finished.');
+                                                    musicQueue.splice([currentSong], 1);
+                                                    musicList.splice([currentSong], 1);   
+                                                }                            
+                                                })
+                                            .on ("error", () => {
+                                                console.error("❌ Could not join the voice channel");
+                                                });   
+                                        }
+                                        else if (!isSongAdded)
+                                        {
+                                            isSongAdded = true;
+                                            YTDL.getInfo(songUrl, function(err, info){
+                                                var songName = info.title;
+                                                message.channel.send(`Added to list: **${songName}** `);
+                                            });
+                                        }
+                                        YTDL.getInfo(this.videos[parseInt(m.content) - 1].url, function(err, info){
+                                            var songName = info.title;
+                                            musicList.push(songName);
+                                        });
+                                    }
+                                    else
+                                    {
+                                        message.reply("This song is already in the list.");
+                                    }
                                 });
                             });
                         }
@@ -372,9 +422,7 @@ bot.on('message', message=>
                 }
                 else if (args[1] === 'current')
                 {
-                    YTDL.getInfo(musicList[0], function(err, info){
-                    message.channel.send(`Now playing: **${info.title}** `);
-                    });   
+                    message.channel.send(`Now playing: **${musicList[0]}**`);
                 }
                 else if (args[1] === 'clear')
                 {
@@ -397,7 +445,7 @@ bot.on('message', message=>
                         {
                             message.channel.send("```1: " + musicList[0] + "```");
                         }
-                        else if (musicList === [])
+                        else if (musicList.length === 0)
                         {
                             message.channel.send("The song list is empty");
                         }
