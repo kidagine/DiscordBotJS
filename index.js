@@ -6,12 +6,14 @@ const botTokenText = fs.readFileSync("./botToken.txt").toString('utf-8');
 const token = botTokenText;
 
 const PREFIX = '!';
-const version = '1.3.9';
+const version = '1.4.4';
 
 const customCommandsFile = "./customCommands.json";
 var customCommandsList = [];
 var customCommandsData = JSON.parse(fs.readFileSync(customCommandsFile, "utf8"));
+const dayInMiliseconds = 86400000;
 
+global.servers = {};
 var musicConnection;
 const YTDL = require('ytdl-core');  
 const ytSearch = require('yt-search');
@@ -44,23 +46,23 @@ bot.on('ready', () =>{
                 var channel = bot.channels.get('475644212273086484');
                 channel.sendMessage("ITS A NEW DAY");
             }
-    }, 86400);
+    }, dayInMiliseconds);
 
     //Random status chooser
     var random = Math.floor(Math.random() * 4);
     switch(random)
     {
         case 0:
-            bot.user.setActivity("Call Of Scrubs 3", {type: "PLAYING"})
+            bot.user.setActivity("Call Of Scrubs 3", {type: "PLAYING"});
             break;
         case 1:
-            bot.user.setActivity("Scrubbing along", {type: "STREAMING"})
+            bot.user.setActivity("Scrubbing along", {type: "STREAMING"});
             break;
         case 2:
-            bot.user.setActivity("Scrubbing my ears", {type: "LISTENING"})
+            bot.user.setActivity("Scrubbing my ears", {type: "LISTENING"});
             break;
         case 3:
-            bot.user.setActivity("Scrubs And Punishment", {type: "WATCHING"})
+            bot.user.setActivity("Scrubs And Punishment", {type: "WATCHING"});
             break;
     }
 });
@@ -73,11 +75,11 @@ bot.on('guildMemberAdd', member =>{
     }
     else
     {
-        channel.send(`Welcome to the server u scrub, ${member}, ur a huge scrub!`)
+        channel.send(`Welcome to the server u scrub, ${member}, ur a huge scrub!`);
     }
 });
 
-bot.on('disconnect', () => console.log('This bot is offline'));
+bot.on('disconnect', () => console.log('The bot is offline'));
 bot.on('reconnecting', () => console.log("Reconnecting..."));
 
 //Custom command object
@@ -101,6 +103,27 @@ var CustomCommand =
         return text;
     }
 };
+
+//Check if its a youtube URL
+function isYoutubeUrl(urlToCheck){
+    const ytUrl = "https://www.youtube.com/watch?v=";
+    const ytUrlLength = 43;
+    if (urlToCheck.startsWith(ytUrl))
+    {
+        if (urlToCheck.length >= ytUrlLength)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return false;
+    }
+}
 
 //---COMMANDS---
 bot.on('message', message=>
@@ -127,7 +150,7 @@ bot.on('message', message=>
                         if (parseInt(args[1]) <= 100)
                         {
                             message.channel.bulkDelete(parseInt(args[1]));
-                            message.channel.send(`Deleted messages:  **${args[1]}** `)
+                            message.channel.send(`Deleted messages:  **${args[1]}** `);
                         }
                         else
                         {
@@ -144,31 +167,22 @@ bot.on('message', message=>
             case 'info':
                 if (args[1] === 'version')
                 {
-                    message.channel.sendMessage('Version ' + version)
+                    message.channel.sendMessage('Version ' + version);
                 }
                 else
                 {
-                    message.channel.sendMessage('Be more specific scrub.')
+                    message.channel.sendMessage('Be more specific scrub.');
                 }
                 break;
             //Date Commands
-            case "date":
+            case 'date':
                     var today = new Date();
                     var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
-                    message.channel.sendMessage(date)
-                    break;
-            //Embed Commands
-                case 'embed':
-                    const embed = new Discord.RichEmbed()
-                    .addField('Scrub role', 'Captain')
-                    .addField('Scrub name', message.author.username)
-                    .setColor(0xE4007C)
-                    .setThumbnail(message.author.avatarURL)
-                    message.channel.sendEmbed(embed);
+                    message.channel.send(date);
                     break;
             //Music commands
             case 'music':
-                if (args[1] === "join")
+                if (args[1] === 'join')
                 {
                     if (message.member.voiceChannel)
                     {
@@ -176,7 +190,7 @@ bot.on('message', message=>
                         {
                             if (!servers[message.guild.id])
                             {
-                                servers[message.guild.id] = {queue: []}
+                                servers[message.guild.id] = {queue: []};
                             }
                             message.member.voiceChannel.join()
                                 .then(connection => {
@@ -191,7 +205,7 @@ bot.on('message', message=>
                     }
                     else
                     {
-                        message.reply("You have to be in a voice channel.");
+                        message.reply("You have to be in a voice channel");
                     }
                 }
                 else if (args[1] === 'leave')
@@ -211,62 +225,72 @@ bot.on('message', message=>
                     {
                         if (message.guild.voiceConnection)
                         {    
-                            if (!musicQueue.includes(argsNormalCase[2]))
+                            if (!musicQueue.includes(argsNormalCase[2].substring(0,43)))
                             {         
-                                var isSongAdded = false;
-                                musicQueue.push(argsNormalCase[2]);
-                                for (i = 0; i < musicQueue.length; i++)
-                                {         
-                                    if (musicQueue.length === 1)
-                                    {
-                                        currentSong = i; 
-                                        YTDL.getInfo(argsNormalCase[2], function(err, info){
-                                            var songName = info.title;
-                                            message.channel.send(`Started playing: **${songName}** `)
-                                            });
-                                            const dipatcher = musicConnection.playStream(YTDL(argsNormalCase[2]))
-                                        .on ("end", () => {
-                                            if (musicQueue.length !== 1)
-                                            {
-                                                if (!isSongSkipped)
+                                if (isYoutubeUrl(argsNormalCase[2]))
+                                {
+                                    var isSongAdded = false;
+                                    musicQueue.push(argsNormalCase[2].substring(0,43));
+                                    for (i = 0; i < musicQueue.length; i++)
+                                    {         
+                                        if (musicQueue.length === 1)
+                                        {
+                                            currentSong = i; 
+                                            YTDL.getInfo(argsNormalCase[2], function(err, info){
+                                                var songName = info.title;
+                                                message.channel.send(`Started playing: **${songName}** `);
+                                                });
+                                                const dipatcher = musicConnection.playStream(YTDL(argsNormalCase[2]))
+                                            .on ("end", () => {
+                                                if (musicQueue.length !== 1)
+                                                {   
+                                                    console.log("test");
+                                                    if (!isSongSkipped)
+                                                    {
+                                                        console.log("test2");
+                                                        YTDL.getInfo(musicQueue[currentSong + 1], function(err, info){
+                                                        var songName = info.title;
+                                                        message.channel.send(`Now playing: **${songName}** `);
+                                                        });
+                                                        const dipatcher = musicConnection.playStream(YTDL(musicQueue[currentSong + 1]));
+                                                        musicQueue.splice([currentSong], 1);
+                                                        musicList.splice([currentSong], 1);  
+                                                    }                                         
+                                                }
+                                                else
                                                 {
-                                                    YTDL.getInfo(musicQueue[currentSong + 1], function(err, info){
-                                                    var songName = info.title;
-                                                    message.channel.send(`Now playing: **${songName}** `);
-                                                    });
-                                                    const dipatcher = musicConnection.playStream(YTDL(musicQueue[currentSong + 1]));
+                                                    console.log("test3");
+                                                    message.channel.send('The song queue has finished.');
                                                     musicQueue.splice([currentSong], 1);
-                                                    musicList.splice([currentSong], 1);  
-                                                }                                         
-                                            }
-                                            else
-                                            {
-                                                message.channel.send('The song queue has finished.');
-                                                musicQueue.splice([currentSong], 1);
-                                                musicList.splice([currentSong], 1);   
-                                            }
-                                            })
-                                        .on ("error", () => {
-                                            console.error("Could not join the voice channel");
+                                                    musicList.splice([currentSong], 1);   
+                                                }
+                                                })
+                                            .on ("error", () => {
+                                                console.error("Could not join the voice channel");
+                                                });
+                                        }
+                                        else if (!isSongAdded)
+                                        {
+                                            isSongAdded = true;
+                                            YTDL.getInfo(argsNormalCase[2], function(err, info){
+                                                var songName = info.title;
+                                                message.channel.send(`Added to list: **${songName}** `);
                                             });
+                                        }
                                     }
-                                    else if (!isSongAdded)
-                                    {
-                                        isSongAdded = true;
-                                        YTDL.getInfo(argsNormalCase[2], function(err, info){
-                                            var songName = info.title;
-                                            message.channel.send(`Added to list: **${songName}** `);
-                                        });
-                                    }
+                                    YTDL.getInfo(argsNormalCase[2], function(err, info){
+                                        var songName = info.title;
+                                        musicList.push(songName);
+                                    });
                                 }
-                                YTDL.getInfo(argsNormalCase[2], function(err, info){
-                                var songName = info.title;
-                                musicList.push(songName);
-                                });
+                                else
+                                {
+                                    message.reply("This url does not qualify as a youtube url");
+                                }
                             }
                             else
                             {
-                                message.reply("This song is already in the list.");
+                                message.reply("This song is already in the list");
                             }
                         }
                         else
@@ -309,7 +333,6 @@ bot.on('message', message=>
                         }
                         else
                         {
-                            console.log("start");
                             musicQueue = [];
                             musicList = [];
                             message.channel.send('The song queue has finished.');
@@ -405,19 +428,19 @@ bot.on('message', message=>
                                     }
                                     else
                                     {
-                                        message.reply("This song is already in the list.");
+                                        message.reply("This song is already in the list");
                                     }
                                 });
                             });
                         }
                         else
                         {
-                            message.reply("I have to be in a voice channel.");
+                            message.reply("I have to be in a voice channel");
                         }
                     }
                     else
                     {
-                        message.reply("You have to be in a voice channel.");
+                        message.reply("You have to be in a voice channel");
                     }
                 }
                 else if (args[1] === 'current')
@@ -432,7 +455,7 @@ bot.on('message', message=>
                         {
                             musicQueue = [];
                             musicList = [];
-                            message.channel.send("<@" + message.author.id + ">" + " -> The music list has been cleared successfully.");
+                            message.channel.send("<@" + message.author.id + ">" + " -> The music list has been cleared successfully");
                         }
                     }
                 }
@@ -479,30 +502,6 @@ bot.on('message', message=>
                 }
                 break;
             //Random Commands
-            case 'fight':
-                var random = Math.floor(Math.random() * 5)
-                switch (random)
-                {
-                    case 0:
-                        message.channel.send(message.author.username + " GETS FUKD")
-                        break;
-                    case 1:
-                        message.channel.send(message.author.username + " GETS FUKD")
-                        break;
-                    case 2:
-                        message.channel.send(message.author.username + " GETS FUKD")
-                        break;
-                    case 3:
-                        message.channel.send(messsage.author.username + " GETS FUKD")
-                        break;
-                    case 4:
-                        message.channel.send(message.author.username + " GETS FUKD")
-                        break;
-                    case 5:
-                        message.channel.send(message.author.username + " GETS FUKD")
-                        break;
-                }
-                break;
             case 'cutes':
                 var random = Math.floor(Math.random()* 11)
                 switch (random)
@@ -558,10 +557,10 @@ bot.on('message', message=>
                 }
                 break;
             //-Custom Commands
-            case "command":
+            case 'command':
                 if (args[1] === 'add')
                 {
-                    if (args[2].startsWith("!"))
+                    if (args[2].startsWith('!'))
                     {
                         if (args[3])
                         {
@@ -593,7 +592,7 @@ bot.on('message', message=>
                 }
                 else if (args[1] === 'remove')
                 {
-                    if (args[2].startsWith("!"))
+                    if (args[2].startsWith('!'))
                     {
                         var doesCommandExist = false;
                         for (i = 0; i < customCommandsList.length; i++)
@@ -624,7 +623,7 @@ bot.on('message', message=>
                 }
                 else if (args[1] === 'edit')
                 {
-                    if (args[2].startsWith("!"))
+                    if (args[2].startsWith('!'))
                     {
                         if (args[3])
                         {
