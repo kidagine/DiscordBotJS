@@ -174,7 +174,6 @@ function Play(message){
         {   
             if (!isSongSkipped)
             {
-                console.log('2');
                 musicQueue.splice(0, 1);
                 musicList.splice(0, 1);  
                 YTDL.getInfo(musicQueue[0], function(err, info){
@@ -186,7 +185,6 @@ function Play(message){
         }
         else
         {
-            console.log('3no');
             message.channel.send("The song queue has finished.");
             musicQueue.splice(0, 1);
             musicList.splice(0, 1);  
