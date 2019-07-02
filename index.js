@@ -38,13 +38,55 @@ bot.on('ready', () =>{
         }
     //Date checker
     setInterval(() => {
+        var channel = bot.channels.get('475644212273086484');
         var date = new Date();
         var today = date.getFullYear() + '-' + (date.getMonth()) + '-' + (date.getDate());
-        var tomorrow = date.getFullYear() +'-'+(date.getMonth())+'-' + 1;
-            if (today === tomorrow)
+
+        var newYear = date.getFullYear() + '-' + 1 + '-' + 1;
+        var valentine = date.getFullYear() + '-' + 2 + '-' + 14;
+        var easter = date.getFullYear() + '-' + 4 + '-' + 12;
+        var motherDay = date.getFullYear() + '-' + 5 + '-' + 10;
+        var fatherDay = date.getFullYear() + '-' + 6 + '-' + 16;
+        var halloween = date.getFullYear() + '-' + 10 + '-' + 31;
+        var thanksgiving = date.getFullYear() + '-' + 11 + '-' + 28;
+        var blackFriday = date.getFullYear() + '-' + 11 + '-' + 29;
+        var christmas = date.getFullYear() + '-' + 12 + '-' + 24;
+
+        if (today === newYear)
             {
-                var channel = bot.channels.get('475644212273086484');
-                channel.sendMessage("ITS A NEW DAY");
+                channel.sendMessage("My new year resolution is to be more human (New Year)");
+            }
+            else if (today === valentine)
+            {
+                channel.sendMessage("I still don't have a valentine for this year (Valentine's Day)");
+            }
+            else if (today === easter)
+            {
+                channel.sendMessage("I just wanna smash eggs (Easter)");
+            }
+            else if (today === motherDay)
+            {
+                channel.sendMessage("My mom's first name is Motherboard (Mother's Day)");
+            }
+            else if (today === fatherDay)
+            {
+                channel.sendMessage("Dad left us a year ago to buy some RAM (Father's Day)");
+            }
+            else if (today === halloween)
+            {
+                channel.sendMessage("I am literally skynet (Halloween)");
+            }
+            else if (today === thanksgiving)
+            {
+                channel.sendMessage("Can AI eat chicken? Am hungry (Thanksgiving Day)");
+            }
+            else if (today === blackFriday)
+            {
+                channel.sendMessage("I am a capitalist on the inside (Black Friday)");
+            }
+            else if (today === christmas)
+            {
+                channel.sendMessage("CHRISTMAS?More like wheres my gifts... Gus? (Christmas)");
             }
     }, dayInMiliseconds);
 
@@ -75,7 +117,7 @@ bot.on('guildMemberAdd', member =>{
     }
     else
     {
-        channel.send(`Welcome to the server u scrub, ${member}, ur a huge scrub!`);
+        channel.send(`Welcome to the server, ${member}!`);
     }
 });
 
@@ -125,6 +167,38 @@ function isYoutubeUrl(urlToCheck){
     }
 }
 
+//Play song
+function Play(message){
+    console.log('1');
+    const dipatcher = musicConnection.playStream(YTDL(musicQueue[0]))
+    .on ("end", () => {
+        if (musicQueue.length !== 1)
+        {   
+            if (!isSongSkipped)
+            {
+                console.log('2');
+                musicQueue.splice(0, 1);
+                musicList.splice(0, 1);  
+                YTDL.getInfo(musicQueue[0], function(err, info){
+                    var songName = info.title;
+                    message.channel.send(`Started playing: **${songName}** `);
+                });
+                Play(message);
+            }                                         
+        }
+        else
+        {
+            console.log('3no');
+            message.channel.send("The song queue has finished.");
+            musicQueue.splice(0, 1);
+            musicList.splice(0, 1);  
+        }
+        })
+    .on ("error", () => {
+        console.error("Could not join the voice channel");
+        });
+}
+
 //---COMMANDS---
 bot.on('message', message=>
 {
@@ -154,7 +228,7 @@ bot.on('message', message=>
                         }
                         else
                         {
-                            message.channel.send('The numbeer of messages to delete has to be less than 100');
+                            message.channel.send("The number of messages to delete has to be less than 100");
                         }
                     }
                     else
@@ -171,7 +245,7 @@ bot.on('message', message=>
                 }
                 else
                 {
-                    message.channel.sendMessage('Be more specific scrub.');
+                    message.channel.sendMessage("Be more specific");
                 }
                 break;
             //Date Commands
@@ -195,7 +269,7 @@ bot.on('message', message=>
                             message.member.voiceChannel.join()
                                 .then(connection => {
                                     musicConnection = connection;
-                                    message.reply("Joined the voice chat");
+                                    message.reply("Joined the voice chat!");
                                 })
                         }
                         else
@@ -235,39 +309,11 @@ bot.on('message', message=>
                                     {         
                                         if (musicQueue.length === 1)
                                         {
-                                            currentSong = i; 
                                             YTDL.getInfo(argsNormalCase[2], function(err, info){
                                                 var songName = info.title;
                                                 message.channel.send(`Started playing: **${songName}** `);
                                                 });
-                                                const dipatcher = musicConnection.playStream(YTDL(argsNormalCase[2]))
-                                            .on ("end", () => {
-                                                if (musicQueue.length !== 1)
-                                                {   
-                                                    console.log("test");
-                                                    if (!isSongSkipped)
-                                                    {
-                                                        console.log("test2");
-                                                        YTDL.getInfo(musicQueue[currentSong + 1], function(err, info){
-                                                        var songName = info.title;
-                                                        message.channel.send(`Now playing: **${songName}** `);
-                                                        });
-                                                        const dipatcher = musicConnection.playStream(YTDL(musicQueue[currentSong + 1]));
-                                                        musicQueue.splice([currentSong], 1);
-                                                        musicList.splice([currentSong], 1);  
-                                                    }                                         
-                                                }
-                                                else
-                                                {
-                                                    console.log("test3");
-                                                    message.channel.send('The song queue has finished.');
-                                                    musicQueue.splice([currentSong], 1);
-                                                    musicList.splice([currentSong], 1);   
-                                                }
-                                                })
-                                            .on ("error", () => {
-                                                console.error("Could not join the voice channel");
-                                                });
+                                            Play(message);
                                         }
                                         else if (!isSongAdded)
                                         {
@@ -300,42 +346,38 @@ bot.on('message', message=>
                     }
                     else
                     {
-                        message.reply("You need to include a URL.");
+                        message.reply("You have to include a URL");
                     }
                 }   
-                else if (args[1] === 'pause')
-                {
-                    const dipatcher = musicConnection.dipatcher.END
-                }
-                else if (args[1] === 'resume')
-                {
-                    
-                }
                 else if (args[1] === 'skip')
                 {
                     if (message.guild.voiceConnection)
                     {
                         console.log(musicQueue.length);
-                        if (musicQueue.length !== 1)
+                        if (musicQueue.length > 1)
                         {
                             isSongSkipped = true;
-                            YTDL.getInfo(musicQueue[currentSong + 1], function(err, info){
+                            YTDL.getInfo(musicQueue[1], function(err, info){
                                 var songName = info.title;
-                                message.channel.send('Skipped current song');
+                                message.channel.send("Skipped current song");
                                 message.channel.send(`Started playing: **${songName}** `);
                             });
-                            const dipatcher = musicConnection.playStream(YTDL(musicQueue[currentSong + 1]))
+                            const dipatcher = musicConnection.playStream(YTDL(musicQueue[1]))
                             .on ("start", () => {
                                 isSongSkipped = false;
                             });
-                            musicQueue.splice([currentSong], 1);
-                            musicList.splice([currentSong], 1);
+                            musicQueue.splice(0, 1);
+                            musicList.splice(0, 1);
                         }
-                        else
+                        else if (musicQueue.length === 1)
                         {
                             musicQueue = [];
                             musicList = [];
-                            message.channel.send('The song queue has finished.');
+                            message.channel.send("The song queue has finished");
+                        }
+                        else
+                        {
+                            message.channel.send("There is no song currently being played in order to skip it");
                         }
                     }
                     else
@@ -390,28 +432,7 @@ bot.on('message', message=>
                                         {
                                             currentSong = parseInt(m.content) - 1;
                                             message.channel.send(`Started playing: **${videos[currentSong].title}** `)
-                                            const dipatcher = musicConnection.playStream(YTDL(songUrl))
-                                            .on ("end", () => {
-                                                if (musicQueue.length !== 1)
-                                                {
-                                                    YTDL.getInfo(musicQueue[currentSong + 1], function(err, info){
-                                                        var songName = info.title;
-                                                        message.channel.send(`Now playing: **${songName}** `);
-                                                    });
-                                                    const dipatcher = musicConnection.playStream(YTDL(musicQueue[currentSong + 1]));
-                                                    musicQueue.splice([currentSong], 1);
-                                                    musicList.splice([currentSong], 1);   
-                                                }          
-                                                else
-                                                {
-                                                    message.channel.send('The song queue has finished.');
-                                                    musicQueue.splice([currentSong], 1);
-                                                    musicList.splice([currentSong], 1);   
-                                                }                            
-                                                })
-                                            .on ("error", () => {
-                                                console.error("❌ Could not join the voice channel");
-                                                });   
+                                            Play(message);
                                         }
                                         else if (!isSongAdded)
                                         {
@@ -445,17 +466,28 @@ bot.on('message', message=>
                 }
                 else if (args[1] === 'current')
                 {
-                    message.channel.send(`Now playing: **${musicList[0]}**`);
+                    if (musicList.length !== 0)
+                    {
+                        message.channel.send(`Now playing: **${musicList[0]}**`);
+                    }
+                    else
+                    {
+                        message.channel.send("There is no song currently being played");
+                    }
                 }
                 else if (args[1] === 'clear')
                 {
                     if (message.member.voiceChannel)
                     {
-                        if (!message.guild.voiceConnection)
+                        if (musicQueue > 0)
                         {
                             musicQueue = [];
                             musicList = [];
-                            message.channel.send("<@" + message.author.id + ">" + " -> The music list has been cleared successfully");
+                            message.channel.send("<@" + message.author.id + ">" + " -> The music list has been cleared successfully!");
+                        }
+                        else
+                        {
+                            message.channel.send("The song queue is already empty");
                         }
                     }
                 }
@@ -470,7 +502,7 @@ bot.on('message', message=>
                         }
                         else if (musicList.length === 0)
                         {
-                            message.channel.send("The song list is empty");
+                            message.channel.send("The list of songs is empty!");
                         }
                         else
                         {
@@ -507,51 +539,51 @@ bot.on('message', message=>
                 switch (random)
                 {
                     case 0:
-                        const foxImage00 = new Attachment ("https://i.redd.it/9vy19m3z2g421.png")
+                        const foxImage00 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748719628648450/image0.jpg");
                         message.channel.send(foxImage00);
                         break;
                     case 1:
-                        const foxImage01 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748719054159915/image1.jpg")
+                        const foxImage01 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748719054159915/image1.jpg");
                         message.channel.send(foxImage01);
                         break;
                     case 2:
-                        const foxImage02 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748719054159919/image3.jpg")
+                        const foxImage02 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748719054159919/image3.jpg");
                         message.channel.send(foxImage02);
                         break;
                     case 3:
-                        const foxImage03 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748719628648450/image0.jpg")
+                        const foxImage03 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748719628648450/image0.jpg");
                         message.channel.send(foxImage03);
                         break;
                     case 4:
-                        const foxImage04 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748719632842792/image2.jpg")
+                        const foxImage04 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748719632842792/image2.jpg");
                         message.channel.send(foxImage04);
                         break;
                     case 5:
-                        const foxImage05 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748845629734927/image1.jpg")
+                        const foxImage05 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748845629734927/image1.jpg");
                         message.channel.send(foxImage05);
                         break;
                     case 6:
-                        const foxImage06 = new Attachment ("https://media.discordapp.net/attachments/475644212273086484/591748846074200074/image3.jpg?width=469&height=468")
+                        const foxImage06 = new Attachment ("https://media.discordapp.net/attachments/475644212273086484/591748846074200074/image3.jpg?width=469&height=468");
                         message.channel.send(foxImage06);
                         break;
                     case 7:
-                        const foxImage07 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748846649081887/image0.jpg")
+                        const foxImage07 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748846649081887/image0.jpg");
                         message.channel.send(foxImage07);
                         break;
                     case 8:
-                        const foxImage08 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748847584280576/image2.jpg")
+                        const foxImage08 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748847584280576/image2.jpg");
                         message.channel.send(foxImage08);
                         break;
                     case 9:
-                        const foxImage09 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748888688459779/image1.jpg")
+                        const foxImage09 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748888688459779/image1.jpg");
                         message.channel.send(foxImage09);
                         break;
                     case 10:
-                        const foxImage10 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748888688459782/image0.jpg")
+                        const foxImage10 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748888688459782/image0.jpg");
                         message.channel.send(foxImage10);
                         break;
                     case 11:
-                        const leopardImage01 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748844690341889/image4.jpg")
+                        const leopardImage01 = new Attachment ("https://cdn.discordapp.com/attachments/475644212273086484/591748844690341889/image4.jpg");
                         message.channel.send(leopardImage01);
                         break;
                 }
@@ -560,76 +592,65 @@ bot.on('message', message=>
             case 'command':
                 if (args[1] === 'add')
                 {
-                    if (args[2].startsWith('!'))
+                    if (args[2])
                     {
-                        if (args[3])
+                        if (args[2].startsWith('!'))
                         {
-                            var doesCommandExist = false;
-                            var newCustomCommand = Object.create(CustomCommand);
-                            newCustomCommand.init(args[2], argsNormalCase.slice(3).join(" "));
-                            
-                            customCommandsList.forEach(function (customCommand)
+                            if (args[2].length > 1)
                             {
-                                if (args[2] === customCommand.getCommandName())
+                                if (args[3])
                                 {
-                                    message.channel.send("This command already exists scrub");
-                                    doesCommandExist = true;
-                                    return;
-                                }
-                            })
-                            if (doesCommandExist === false)
-                            {
-                                customCommandsList.push(newCustomCommand);
-                                message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + newCustomCommand.getCommandName() + "\"" + " has been added successfully.");
+                                    var doesCommandExist = false;
+                                    var newCustomCommand = Object.create(CustomCommand);
+                                    newCustomCommand.init(args[2], argsNormalCase.slice(3).join(" "));
+                                    
+                                    customCommandsList.forEach(function (customCommand)
+                                    {
+                                        if (args[2] === customCommand.getCommandName())
+                                        {
+                                            message.channel.send("This command already silly");
+                                            doesCommandExist = true;
+                                            return;
+                                        }
+                                    })
+                                    if (doesCommandExist === false)
+                                    {
+                                        customCommandsList.push(newCustomCommand);
+                                        message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + newCustomCommand.getCommandName() + "\"" + " has been added successfully!");
 
-                                fs.writeFile (customCommandsFile, JSON.stringify(customCommandsList, null, 2), err =>{
-                                    if (err) throw err;
-                                });
-                                return;
+                                        fs.writeFile (customCommandsFile, JSON.stringify(customCommandsList, null, 2), err =>{
+                                            if (err) throw err;
+                                        });
+                                        return;
+                                    }
+                                }
+                                else
+                                {
+                                    message.channel.send("You have to include a text for the command");
+                                }
+                            }
+                            else
+                            {
+                                message.channel.send("You have to give a name for the command");
                             }
                         }
+                        else
+                        {
+                            message.channel.send("The command name has to start with \"!\"");
+                        }
+                    }
+                    else
+                    {
+                        message.channel.send("You have to include a command name and text");
                     }
                 }
                 else if (args[1] === 'remove')
                 {
-                    if (args[2].startsWith('!'))
+                    if (args[2])
                     {
-                        var doesCommandExist = false;
-                        for (i = 0; i < customCommandsList.length; i++)
-                        {
-                            if (args[2] === customCommandsList[i].getCommandName())
-                            {
-                                if (i === 0)
-                                {
-                                    customCommandsList.splice(i,i+1);
-                                }
-                                else if (i !== 0)
-                                {
-                                    customCommandsList.splice(i,i);
-                                }
-                                doesCommandExist = true;
-                            }
-                        }
-                        if (doesCommandExist === true)
-                        {
-                            message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + args[2] + "\"" + " has been removed successfully.");
-
-                            fs.writeFile (customCommandsFile, JSON.stringify(customCommandsList, null, 2), err =>{
-                                if (err) throw err;
-                            });
-                            return;
-                        }
-                    }
-                }
-                else if (args[1] === 'edit')
-                {
-                    if (args[2].startsWith('!'))
-                    {
-                        if (args[3])
+                        if (args[2].startsWith('!'))
                         {
                             var doesCommandExist = false;
-                            var newCustomCommand = Object.create(CustomCommand);
-                            newCustomCommand.init(args[2], args.slice(3).join(" "));
                             for (i = 0; i < customCommandsList.length; i++)
                             {
                                 if (args[2] === customCommandsList[i].getCommandName())
@@ -637,61 +658,140 @@ bot.on('message', message=>
                                     if (i === 0)
                                     {
                                         customCommandsList.splice(i,i+1);
-                                        customCommandsList.push(newCustomCommand);
                                     }
                                     else if (i !== 0)
                                     {
                                         customCommandsList.splice(i,i);
-                                        customCommandsList.push(newCustomCommand);
                                     }
                                     doesCommandExist = true;
                                 }
                             }
                             if (doesCommandExist === true)
                             {
-                                message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + args[2] + "\"" + " has been edited successfully.");
+                                message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + args[2] + "\"" + " has been removed successfully!");
 
                                 fs.writeFile (customCommandsFile, JSON.stringify(customCommandsList, null, 2), err =>{
                                     if (err) throw err;
                                 });
                                 return;
                             }
+                            else
+                            {
+                                message.channel.send("This command does not exist");
+                            }
                         }
+                        else
+                        {
+                            message.channel.send("The command names start with \"!\"");
+                        }
+                    }
+                    else
+                    {
+                        message.channel.send("You have to include the name of the command you wish to remove");
+                    }
+                }
+                else if (args[1] === 'edit')
+                {
+                    if (args[2])
+                    {
+                        if (args[2].startsWith('!'))
+                        {
+                            if (args[3])
+                            {
+                                var doesCommandExist = false;
+                                var newCustomCommand = Object.create(CustomCommand);
+                                newCustomCommand.init(args[2], args.slice(3).join(" "));
+                                for (i = 0; i < customCommandsList.length; i++)
+                                {
+                                    if (args[2] === customCommandsList[i].getCommandName())
+                                    {
+                                        if (i === 0)
+                                        {
+                                            customCommandsList.splice(i,i+1);
+                                            customCommandsList.push(newCustomCommand);
+                                        }
+                                        else if (i !== 0)
+                                        {
+                                            customCommandsList.splice(i,i);
+                                            customCommandsList.push(newCustomCommand);
+                                        }
+                                        doesCommandExist = true;
+                                    }
+                                }
+                                if (doesCommandExist === true)
+                                {
+                                    message.channel.send("<@" + message.author.id + ">" + " -> The command " + "\"" + args[2] + "\"" + " has been edited successfully!");
+                                    fs.writeFile (customCommandsFile, JSON.stringify(customCommandsList, null, 2), err =>{
+                                        if (err) throw err;
+                                    });
+                                    return;
+                                }
+                                else
+                                {
+                                    message.channel.send("This command does not exist");
+                                }
+                            }
+                            else
+                            {
+                                message.channel.send("You have to include the newly edited text");
+                            }
+                        }
+                        else
+                        {
+                            message.channel.send("The command names start with \"!\"");
+                        }
+                    }
+                    else
+                    {
+                        message.channel.send("You have to include the name of the command you wish to edit");
                     }
                 }
                 else if (args[1] === 'clear')
                 {
+                    if (customCommandsList.length > 0)
+                    {
                     customCommandsList = [];
                     fs.writeFile (customCommandsFile, '[]', err =>{
                         if (err) throw err;
                     }); 
-                    message.channel.send("<@" + message.author.id + ">" + " -> The command list" + " has been cleared successfully.");
+                    message.channel.send("<@" + message.author.id + ">" + " -> The command list" + " has been cleared successfully!");
+                    }
+                    else
+                    {
+                        message.channel.send("The list of commands is already empty dum dum");
+                    }
                 }
                 else if (args[1] === 'list')
-                var listToShow = "";
-                if (customCommandsList.length === 1)
                 {
-                    listToShow = listToShow.concat("```" + "Command: " + customCommandsList[i].getCommandName() + ", " +customCommandsList[i].getCommandText() + "```");
-                    message.channel.send(listToShow);
-                }
-                else
-                {
-                    for (i = 0; i < customCommandsList.length; i++)
+                    var listToShow = "";
+                    if (customCommandsList.length === 1)
                     {
-                            if (customCommandsList[i] === customCommandsList[0])
-                            {
-                                listToShow = "```" + "Command: " + customCommandsList[i].getCommandName() + ", " + customCommandsList[i].getCommandText();
-                            }
-                            else if (customCommandsList[i] === customCommandsList[customCommandsList.length - 1])
-                            {
-                                listToShow = listToShow.concat("\n" + "Command: " + customCommandsList[i].getCommandName() + ", " +customCommandsList[i].getCommandText() + "```");
-                                message.channel.send(listToShow);
-                                return;
-                            }
-                            else
-                            {
-                                listToShow = listToShow.concat("\n" + "Command: " + customCommandsList[i].getCommandName() + ", " +customCommandsList[i].getCommandText());
-                            }
+                        listToShow = listToShow.concat("```" + "Command: " + customCommandsList[0].getCommandName() + ", " +customCommandsList[0].getCommandText() + "```");
+                        message.channel.send(listToShow);
+                    }
+                    else if (customCommandsList.length > 1)
+                    {
+                        for (i = 0; i < customCommandsList.length; i++)
+                        {
+                                if (customCommandsList[i] === customCommandsList[0])
+                                {
+                                    listToShow = "```" + "Command: " + customCommandsList[i].getCommandName() + ", " + customCommandsList[i].getCommandText();
+                                }
+                                else if (customCommandsList[i] === customCommandsList[customCommandsList.length - 1])
+                                {
+                                    listToShow = listToShow.concat("\n" + "Command: " + customCommandsList[i].getCommandName() + ", " +customCommandsList[i].getCommandText() + "```");
+                                    message.channel.send(listToShow);
+                                    return;
+                                }
+                                else
+                                {
+                                    listToShow = listToShow.concat("\n" + "Command: " + customCommandsList[i].getCommandName() + ", " +customCommandsList[i].getCommandText());
+                                }
+                        }
+                    }
+                    else
+                    {
+                        message.channel.send("The list of commands is empty now!");
                     }
                 }
                 break;  

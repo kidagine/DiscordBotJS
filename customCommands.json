@@ -1,10 +1,6 @@
 [
   {
-    "commandName": "!k",
-    "commandText": "k"
-  },
-  {
-    "commandName": "!smth",
-    "commandText": "k"
+    "commandName": "!s",
+    "commandText": "s"
   }
 ]
