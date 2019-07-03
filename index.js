@@ -4,7 +4,7 @@ const bot = new Client();
 const fs = require("fs");
 
 const PREFIX = '!';
-const version = '1.4.4';
+const version = '1.5.0';
 
 const customCommandsFile = "./customCommands.json";
 var customCommandsList = [];
@@ -167,7 +167,6 @@ function isYoutubeUrl(urlToCheck){
 
 //Play song
 function Play(message){
-    console.log('1');
     const dipatcher = musicConnection.playStream(YTDL(musicQueue[0]))
     .on ("end", () => {
         if (musicQueue.length !== 1)
@@ -246,10 +245,10 @@ bot.on('message', message=>
                 break;
             //Date Commands
             case 'date':
-                    var today = new Date();
-                    var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
-                    message.channel.send(date);
-                    break;
+                var today = new Date();
+                var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+                message.channel.send(date);
+                break;
             //Music commands
             case 'music':
                 if (args[1] === 'join')
@@ -604,7 +603,7 @@ bot.on('message', message=>
                                     {
                                         if (args[2] === customCommand.getCommandName())
                                         {
-                                            message.channel.send("This command already silly");
+                                            message.channel.send("This command exists already silly");
                                             doesCommandExist = true;
                                             return;
                                         }
@@ -746,11 +745,11 @@ bot.on('message', message=>
                 {
                     if (customCommandsList.length > 0)
                     {
-                    customCommandsList = [];
-                    fs.writeFile (customCommandsFile, '[]', err =>{
-                        if (err) throw err;
-                    }); 
-                    message.channel.send("<@" + message.author.id + ">" + " -> The command list" + " has been cleared successfully!");
+                        customCommandsList = [];
+                        fs.writeFile (customCommandsFile, '[]', err =>{
+                            if (err) throw err;
+                        }); 
+                        message.channel.send("<@" + message.author.id + ">" + " -> The command list" + " has been cleared successfully!");
                     }
                     else
                     {
